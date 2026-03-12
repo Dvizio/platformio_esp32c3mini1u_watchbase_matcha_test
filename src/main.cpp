@@ -6,6 +6,7 @@
 #include "CST816D.h"
 #include "ui.h"
 #include "I2C_BM8563.h"
+#include <esp_now.h>
 
 // --- PIN DEFINITIONS ---
 #define I2C_SDA 4
@@ -18,9 +19,22 @@
 // #define ENCODER_A_PIN 19
 // #define ENCODER_B_PIN 18
 // #define SWITCH_PIN 20
+uint8_t broadcastAddress1[] = {0xD4, 0x8C, 0x49, 0x20, 0xF2, 0x1C};
+uint8_t broadcastAddress2[] = {0xD4, 0x8C, 0x49, 0x1F, 0xC9, 0xA4};
+uint8_t broadcastAddress3[] = {0xD4, 0x8C, 0x49, 0x20, 0xF2, 0x54};
+uint8_t *target;
 
 int currentStepperIndex = 0;      // Global variable to track stepper value
-int stepperVal[3] = {20, 50, 50}; // Array to hold values for 3 steppers
+int stepperVal[3] = {100, 100, 100}; // Array to hold values for 3 steppers
+
+typedef struct struct_message
+{
+  int b;
+  bool d;
+} struct_message;
+
+struct_message myData;
+esp_now_peer_info_t peerInfo;
 
 // --- DISPLAY CONFIG ---
 class LGFX : public lgfx::LGFX_Device
@@ -88,6 +102,74 @@ void my_touchpad_read(lv_indev_drv_t *indev_driver, lv_indev_data_t *data)
     data->state = LV_INDEV_STATE_REL;
   }
 }
+
+void OnDataSent(const esp_now_send_info_t *tx_info, esp_now_send_status_t status)
+{
+  Serial.print("\r\nLast Packet Send Status: ");
+  if (status == ESP_NOW_SEND_SUCCESS)
+  {
+    Serial.println("Delivery Success");
+  }
+  else
+  {
+    Serial.println("Delivery Fail");
+  }
+
+  // If you still need the MAC address for logging:
+  // Use: tx_info->des_addr
+}
+
+void initESPNow()
+{
+  WiFi.mode(WIFI_STA);
+
+  if (esp_now_init() != ESP_OK)
+  {
+    Serial.println("Error initializing ESP-NOW");
+    return;
+  }
+
+  esp_now_register_send_cb(OnDataSent);
+
+  // Register Peers
+  peerInfo.channel = 0;
+  peerInfo.encrypt = false;
+
+  // Add Peer 1
+  memcpy(peerInfo.peer_addr, broadcastAddress1, 6);
+  esp_now_add_peer(&peerInfo);
+
+  // Add Peer 2
+  memcpy(peerInfo.peer_addr, broadcastAddress2, 6);
+  esp_now_add_peer(&peerInfo);
+
+  // Add Peer 3
+  memcpy(peerInfo.peer_addr, broadcastAddress3, 6);
+  esp_now_add_peer(&peerInfo);
+}
+
+void sendStepperData(uint8_t *targetAddress, int value)
+{
+  if (targetAddress == NULL)
+  {
+    Serial.println("Error: Target Address is NULL");
+    return;
+  }
+  myData.b = value;
+  myData.d = true; // Active
+
+  esp_err_t result = esp_now_send(targetAddress, (uint8_t *)&myData, sizeof(myData));
+
+  if (result == ESP_OK)
+  {
+    Serial.println("Sent with success");
+  }
+  else
+  {
+    Serial.println("Error sending the data");
+  }
+}
+
 extern "C"
 {
   void startButtonListener(lv_event_t *e)
@@ -105,6 +187,14 @@ extern "C"
     currentStepperIndex = (currentStepperIndex + 1) % 3; // Cycle through 0, 1, 2
     lv_label_set_text_fmt(ui_stepper1Label, "Stepper%d: %d", currentStepperIndex + 1, stepperVal[currentStepperIndex]);
     Serial.println("Stepper1 button pressed!");
+    if (currentStepperIndex == 0)
+      target = broadcastAddress1;
+    else if (currentStepperIndex == 1)
+      target = broadcastAddress2;
+    else
+      target = broadcastAddress3;
+
+    sendStepperData(target, stepperVal[currentStepperIndex]);
   }
 
   void decrementDown(lv_event_t *e)
@@ -112,6 +202,7 @@ extern "C"
     Serial.println("Stepper1 down button pressed!");
     stepperVal[currentStepperIndex] = stepperVal[currentStepperIndex] > 0 ? stepperVal[currentStepperIndex] - 1 : 0; // Decrement with floor at 0
     lv_label_set_text_fmt(ui_stepper1Label, "Stepper%d: %d", currentStepperIndex + 1, stepperVal[currentStepperIndex]);
+    sendStepperData(target, stepperVal[currentStepperIndex]);
   }
 
   void incrementUp(lv_event_t *e)
@@ -119,8 +210,10 @@ extern "C"
     Serial.println("Stepper1 up button pressed!");
     stepperVal[currentStepperIndex] = stepperVal[currentStepperIndex] < 100 ? stepperVal[currentStepperIndex] + 1 : 100; // Increment with ceiling at 100
     lv_label_set_text_fmt(ui_stepper1Label, "Stepper%d: %d", currentStepperIndex + 1, stepperVal[currentStepperIndex]);
+    sendStepperData(target, stepperVal[currentStepperIndex]);
   }
 }
+
 void setup()
 {
   // 1. IMMEDIATE POWER ON
@@ -130,7 +223,7 @@ void setup()
 
   Serial.begin(115200);
   Serial.println("System Booting with Factory Power Specs...");
-
+  initESPNow();
   // 2. I2C & SENSORS
   Wire.begin(I2C_SDA, I2C_SCL, 100000);
   rtc.begin();
