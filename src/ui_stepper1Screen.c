@@ -76,8 +76,8 @@ void ui_stepper1Screen_screen_init(void)
     lv_obj_set_width(ui_stepper1Label, LV_SIZE_CONTENT);  /// 1
     lv_obj_set_height(ui_stepper1Label, LV_SIZE_CONTENT); /// 1
     lv_obj_set_align(ui_stepper1Label, LV_ALIGN_CENTER);
-    lv_label_set_text(ui_stepper1Label, "Stepper1");
-    lv_obj_set_style_text_font(ui_stepper1Label, &lv_font_montserrat_30, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_label_set_text(ui_stepper1Label, "HEE HEE");
+    lv_obj_set_style_text_font(ui_stepper1Label, &lv_font_montserrat_24, LV_PART_MAIN | LV_STATE_DEFAULT);
 
     ui_stepper1UpButton = lv_btn_create(ui_stepper1Screen);
     lv_obj_set_width(ui_stepper1UpButton, 228);

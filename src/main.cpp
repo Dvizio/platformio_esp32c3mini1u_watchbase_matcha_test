@@ -19,6 +19,9 @@
 // #define ENCODER_B_PIN 18
 // #define SWITCH_PIN 20
 
+int currentStepperIndex = 0;      // Global variable to track stepper value
+int stepperVal[3] = {20, 50, 50}; // Array to hold values for 3 steppers
+
 // --- DISPLAY CONFIG ---
 class LGFX : public lgfx::LGFX_Device
 {
@@ -99,18 +102,23 @@ extern "C"
 
   void changestepper(lv_event_t *e)
   {
-    lv_label_set_text_fmt(ui_stepper1Label, "Stepper%d", (rand() % 5) + 1);
+    currentStepperIndex = (currentStepperIndex + 1) % 3; // Cycle through 0, 1, 2
+    lv_label_set_text_fmt(ui_stepper1Label, "Stepper%d: %d", currentStepperIndex + 1, stepperVal[currentStepperIndex]);
     Serial.println("Stepper1 button pressed!");
   }
 
   void decrementDown(lv_event_t *e)
   {
     Serial.println("Stepper1 down button pressed!");
+    stepperVal[currentStepperIndex] = stepperVal[currentStepperIndex] > 0 ? stepperVal[currentStepperIndex] - 1 : 0; // Decrement with floor at 0
+    lv_label_set_text_fmt(ui_stepper1Label, "Stepper%d: %d", currentStepperIndex + 1, stepperVal[currentStepperIndex]);
   }
 
   void incrementUp(lv_event_t *e)
   {
     Serial.println("Stepper1 up button pressed!");
+    stepperVal[currentStepperIndex] = stepperVal[currentStepperIndex] < 100 ? stepperVal[currentStepperIndex] + 1 : 100; // Increment with ceiling at 100
+    lv_label_set_text_fmt(ui_stepper1Label, "Stepper%d: %d", currentStepperIndex + 1, stepperVal[currentStepperIndex]);
   }
 }
 void setup()
