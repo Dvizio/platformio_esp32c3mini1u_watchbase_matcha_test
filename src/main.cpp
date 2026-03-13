@@ -24,7 +24,7 @@ uint8_t broadcastAddress2[] = {0xD4, 0x8C, 0x49, 0x1F, 0xC9, 0xA4};
 uint8_t broadcastAddress3[] = {0xD4, 0x8C, 0x49, 0x20, 0xF2, 0x54};
 uint8_t *target;
 
-int currentStepperIndex = 0;      // Global variable to track stepper value
+int currentStepperIndex = 0;         // Global variable to track stepper value
 int stepperVal[3] = {100, 100, 100}; // Array to hold values for 3 steppers
 
 typedef struct struct_message
@@ -148,7 +148,7 @@ void initESPNow()
   esp_now_add_peer(&peerInfo);
 }
 
-void sendStepperData(uint8_t *targetAddress, int value)
+void sendStepperData(uint8_t *targetAddress, int value, int run = 1)
 {
   if (targetAddress == NULL)
   {
@@ -156,7 +156,7 @@ void sendStepperData(uint8_t *targetAddress, int value)
     return;
   }
   myData.b = value;
-  myData.d = true; // Active
+  myData.d = run; // Active
 
   esp_err_t result = esp_now_send(targetAddress, (uint8_t *)&myData, sizeof(myData));
 
@@ -175,11 +175,33 @@ extern "C"
   void startButtonListener(lv_event_t *e)
   {
     Serial.println("Start button pressed!");
+    for (int i = 0; i < 3; i++)
+    {
+      target = (i == 0) ? broadcastAddress1 : (i == 1) ? broadcastAddress2
+                                                       : broadcastAddress3;
+      sendStepperData(target, stepperVal[i]); // Start all stepper with current values
+    }
   }
 
   void stopButtonListener(lv_event_t *e)
   {
     Serial.println("Stop button pressed!");
+    for (int i = 0; i < 3; i++)
+    {
+      target = (i == 0) ? broadcastAddress1 : (i == 1) ? broadcastAddress2
+                                                       : broadcastAddress3;
+      sendStepperData(target, stepperVal[i], 0); // stop all stepper
+    }
+  }
+
+  void updateTarget()
+  {
+    if (currentStepperIndex == 0)
+      target = broadcastAddress1;
+    else if (currentStepperIndex == 1)
+      target = broadcastAddress2;
+    else
+      target = broadcastAddress3;
   }
 
   void changestepper(lv_event_t *e)
@@ -187,12 +209,7 @@ extern "C"
     currentStepperIndex = (currentStepperIndex + 1) % 3; // Cycle through 0, 1, 2
     lv_label_set_text_fmt(ui_stepper1Label, "Stepper%d: %d", currentStepperIndex + 1, stepperVal[currentStepperIndex]);
     Serial.println("Stepper1 button pressed!");
-    if (currentStepperIndex == 0)
-      target = broadcastAddress1;
-    else if (currentStepperIndex == 1)
-      target = broadcastAddress2;
-    else
-      target = broadcastAddress3;
+    updateTarget();
 
     sendStepperData(target, stepperVal[currentStepperIndex]);
   }
@@ -254,6 +271,7 @@ void setup()
   lv_indev_drv_register(&indev_drv);
 
   // 4. UI START
+  target = broadcastAddress1;
   ui_init();
   Serial.println("Setup Finished!");
 }
