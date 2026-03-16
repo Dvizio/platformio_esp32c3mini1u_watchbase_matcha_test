@@ -217,16 +217,33 @@ extern "C"
   void decrementDown(lv_event_t *e)
   {
     Serial.println("Stepper1 down button pressed!");
-    stepperVal[currentStepperIndex] = stepperVal[currentStepperIndex] > 0 ? stepperVal[currentStepperIndex] - 1 : 0; // Decrement with floor at 0
-    lv_label_set_text_fmt(ui_stepper1Label, "Stepper%d: %d", currentStepperIndex + 1, stepperVal[currentStepperIndex]);
+    if (currentStepperIndex == 1)
+    {
+      stepperVal[currentStepperIndex] = stepperVal[currentStepperIndex] > 0 ? stepperVal[currentStepperIndex] - 5 : 0; // Decrement with floor at 0
+      lv_label_set_text_fmt(ui_stepper1Label, "Stepper%d: %d", currentStepperIndex + 1, stepperVal[currentStepperIndex]);
+    }
+    else
+    {
+      stepperVal[currentStepperIndex] = stepperVal[currentStepperIndex] > 0 ? stepperVal[currentStepperIndex] - 1 : 0; // Decrement with floor at 0
+      lv_label_set_text_fmt(ui_stepper1Label, "Stepper%d: %d", currentStepperIndex + 1, stepperVal[currentStepperIndex]);
+    }
+
     sendStepperData(target, stepperVal[currentStepperIndex]);
   }
 
   void incrementUp(lv_event_t *e)
   {
     Serial.println("Stepper1 up button pressed!");
-    stepperVal[currentStepperIndex] = stepperVal[currentStepperIndex] < 100 ? stepperVal[currentStepperIndex] + 1 : 100; // Increment with ceiling at 100
-    lv_label_set_text_fmt(ui_stepper1Label, "Stepper%d: %d", currentStepperIndex + 1, stepperVal[currentStepperIndex]);
+    if (currentStepperIndex == 1)
+    {
+      stepperVal[currentStepperIndex] = stepperVal[currentStepperIndex] < 100 ? stepperVal[currentStepperIndex] + 5 : 100; // Increment with ceiling at 100
+      lv_label_set_text_fmt(ui_stepper1Label, "Stepper%d: %d", currentStepperIndex + 1, stepperVal[currentStepperIndex]);
+    }
+    else
+    {
+      stepperVal[currentStepperIndex] = stepperVal[currentStepperIndex] < 100 ? stepperVal[currentStepperIndex] + 1 : 100; // Increment with ceiling at 100
+      lv_label_set_text_fmt(ui_stepper1Label, "Stepper%d: %d", currentStepperIndex + 1, stepperVal[currentStepperIndex]);
+    }
     sendStepperData(target, stepperVal[currentStepperIndex]);
   }
 }
