@@ -24,8 +24,8 @@ uint8_t broadcastAddress2[] = {0xD4, 0x8C, 0x49, 0x1F, 0xC9, 0xA4};
 uint8_t broadcastAddress3[] = {0xD4, 0x8C, 0x49, 0x20, 0xF2, 0x54};
 uint8_t *target;
 
-int currentStepperIndex = 0;         // Global variable to track stepper value
-int stepperVal[3] = {100, 100, 100}; // Array to hold values for 3 steppers
+int currentStepperIndex = 0;       // Global variable to track stepper value
+int stepperVal[3] = {25, 100, 25}; // Array to hold values for 3 steppers
 
 typedef struct struct_message
 {
